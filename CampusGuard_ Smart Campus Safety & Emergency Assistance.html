@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CampusGuard – Smart Campus Safety & Emergency Assistance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --surface2:#F3F5F8; --ink:#14202E; --muted:#5A6777; --line:#D6DCE3;
+  --sos:#D5352A; --safe:#13796A; --warn:#A86F00; --info:#2858AD;
+  --road:#CBD3DB; --bld:#DDE4EB; --bldline:#B8C3CE; --grass:#E4EEE6;
+  --head:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; --body:'Public Sans','Segoe UI',system-ui,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B121B; --surface:#152130; --surface2:#1B2A3C; --ink:#E7EDF4; --muted:#9AA7B7; --line:#2A3A4E;
+    --sos:#F0564B; --safe:#3CC1A8; --warn:#E8B047; --info:#7AA5EE;
+    --road:#2B3B4E; --bld:#1F2E40; --bldline:#364A60; --grass:#14212D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B121B; --surface:#152130; --surface2:#1B2A3C; --ink:#E7EDF4; --muted:#9AA7B7; --line:#2A3A4E;
+  --sos:#F0564B; --safe:#3CC1A8; --warn:#E8B047; --info:#7AA5EE;
+  --road:#2B3B4E; --bld:#1F2E40; --bldline:#364A60; --grass:#14212D;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+h1,h2,h3{font-family:var(--head);margin:0;letter-spacing:-.01em}
+
+/* ---------- page shell ---------- */
+.top{max-width:1360px;margin:0 auto;padding:18px 20px 8px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.brand h1{font-size:26px;line-height:1.1}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px;max-width:62ch}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{background:var(--sos);border-color:var(--sos);color:#fff}
+.btn.safe{background:var(--safe);border-color:var(--safe);color:#fff}
+.btn.small{padding:5px 10px;font-size:13px;border-radius:8px}
+.seg{display:none;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:8px 14px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.demo-hint{max-width:1360px;margin:0 auto;padding:0 20px 12px;color:var(--muted);font-size:13.5px}
+.stage{max-width:1360px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:392px 1fr;gap:24px;align-items:start}
+@media (max-width:1060px){
+  .stage{grid-template-columns:1fr}
+  .seg{display:flex}
+  .stage[data-view="student"] .ops{display:none}
+  .stage[data-view="ops"] .phone-wrap{display:none}
+  .phone-wrap{display:flex;justify-content:center}
+}
+
+/* ---------- phone ---------- */
+.phone{position:relative;width:100%;max-width:392px;height:min(760px,calc(100dvh - 130px));min-height:620px;background:var(--surface);border:1px solid var(--line);border-radius:34px;box-shadow:0 18px 50px rgba(10,20,35,.18);display:flex;flex-direction:column;overflow:hidden}
+.screen{flex:1;overflow-y:auto;padding:18px 16px 14px;display:none}
+.screen.on{display:block}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.nav button{border:0;background:none;padding:9px 0 11px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
+.nav button[aria-selected="true"]{color:var(--ink)}
+.nav button[aria-selected="true"] svg{stroke:var(--sos)}
+.nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hello{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hello h2{font-size:22px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:99px;padding:4px 10px;font-size:12.5px;color:var(--muted)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--safe);display:inline-block}
+.banner{margin:12px 0 0;padding:10px 12px;border-radius:12px;border-left:5px solid var(--info);background:var(--surface2);font-size:14px}
+.banner.warning{border-color:var(--warn)} .banner.emergency{border-color:var(--sos);background:color-mix(in srgb,var(--sos) 12%,var(--surface))}
+.banner b{display:block;font-family:var(--head)}
+.label{font-weight:600;font-size:14px;margin:18px 0 8px}
+.types{display:flex;flex-wrap:wrap;gap:7px}
+.types button{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 12px;font-size:13.5px;font-weight:500}
+.types button[aria-pressed="true"]{border-color:var(--sos);background:color-mix(in srgb,var(--sos) 12%,var(--surface));font-weight:600}
+.sos-zone{display:flex;flex-direction:column;align-items:center;margin:20px 0 6px}
+.sos{--p:0;position:relative;width:176px;height:176px;border-radius:50%;border:0;background:var(--sos);color:#fff;font-family:var(--head);font-size:40px;font-weight:700;letter-spacing:.02em;box-shadow:0 10px 30px color-mix(in srgb,var(--sos) 45%,transparent);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.sos::before{content:"";position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(var(--ink) calc(var(--p) * 360deg),transparent 0);-webkit-mask:radial-gradient(circle,transparent 79px,#000 80px);mask:radial-gradient(circle,transparent 79px,#000 80px)}
+.sos small{display:block;font-family:var(--body);font-size:12.5px;font-weight:500;letter-spacing:0;opacity:.92;margin-top:2px}
+.sos.holding{transform:scale(.97)}
+.cap{color:var(--muted);font-size:13px;text-align:center;margin-top:12px;max-width:30ch}
+.card{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:14px}
+.card h3{font-size:16px;margin-bottom:6px}
+.steps{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:7px}
+.steps li{display:flex;gap:9px;align-items:center;font-size:14px;color:var(--muted)}
+.steps li i{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-style:normal;font-size:11px;color:#fff}
+.steps li.done{color:var(--ink)} .steps li.done i{background:var(--safe);border-color:var(--safe)}
+.steps li.now{color:var(--ink);font-weight:600} .steps li.now i{border-color:var(--sos)}
+.contacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.contacts button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;text-align:left;font-size:13px}
+.contacts b{display:block;font-size:14px}
+.cd{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 92%,transparent);color:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;text-align:center;padding:30px}
+.cd.on{display:flex}
+.cd .n{font-family:var(--head);font-size:110px;line-height:1;font-weight:700}
+.cd p{margin:0;max-width:26ch}
+.toast{position:absolute;left:14px;right:14px;bottom:76px;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;font-size:14px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:6}
+.toast.on{opacity:1;transform:none}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.maplegend span{display:inline-flex;align-items:center;gap:5px}
+.maplegend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.help-list{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px;font-size:14px}
+.help-list li{display:flex;justify-content:space-between;gap:8px}
+.help-list b{font-weight:600}
+form label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+select,textarea,input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:9px 11px}
+textarea{min-height:92px;resize:vertical}
+.check{display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:14px}
+.check input{margin-top:3px;width:18px;height:18px}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 4px}
+.bar>div{height:100%;background:var(--safe);width:0;transition:width .3s}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- map ---------- */
+svg{display:block;width:100%;height:auto}
+.mapbox{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--grass)}
+.m-grass{fill:var(--grass)} .m-road{stroke:var(--road);stroke-width:9;fill:none;stroke-linecap:butt}
+.m-bld{fill:var(--bld);stroke:var(--bldline);stroke-width:1}
+.m-lbl{font-size:10px;fill:var(--muted);text-anchor:middle;font-family:var(--body);font-weight:500;pointer-events:none}
+.m-me{fill:var(--info);stroke:#fff;stroke-width:2.5}
+.m-ring{fill:color-mix(in srgb,var(--info) 25%,transparent)}
+.m-inc{fill:var(--sos)} .m-incring{fill:color-mix(in srgb,var(--sos) 30%,transparent)}
+.m-inc.low{fill:var(--warn)} .m-incring.low{fill:color-mix(in srgb,var(--warn) 30%,transparent)}
+.m-inc.sel{stroke:var(--ink);stroke-width:2.5}
+.m-resp{fill:var(--safe);stroke:#fff;stroke-width:1.5}
+.m-resp-lbl{font-size:8.5px;fill:var(--ink);font-weight:600;text-anchor:middle;font-family:var(--body)}
+.m-walk{stroke:var(--info);stroke-width:2.2;stroke-dasharray:5 4;fill:none}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1.5s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}.toast{transition:none}.bar>div{transition:none}}
+
+/* ---------- control room ---------- */
+.ops{--surface:#0F1927;--surface2:#16243A;--ink:#E7EDF4;--muted:#93A1B2;--line:#26384F;--sos:#F0564B;--safe:#3CC1A8;--warn:#E8B047;--info:#7AA5EE;--road:#2A3B50;--bld:#1E2E42;--bldline:#34485F;--grass:#12202D;
+  position:relative;background:var(--surface);color:var(--ink);border-radius:22px;padding:18px;border:1px solid #223249;min-width:0}
+.ops-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.ops-head h2{font-size:21px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--safe);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.live i{animation:none}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.stat{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-family:var(--head);font-size:26px;line-height:1.1}
+.stat span{font-size:12.5px;color:var(--muted)}
+.ops-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.ops-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+.ops h3{font-size:16px;margin:0 0 8px}
+.inc{background:var(--surface2);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:12px;padding:11px 12px;margin-bottom:10px}
+.inc.critical{border-left-color:var(--sos)} .inc.high{border-left-color:var(--warn)} .inc.medium{border-left-color:var(--info)} .inc.low{border-left-color:var(--muted)}
+.inc.sel{outline:2px solid var(--ink)}
+.inc.fresh{animation:flash 1.1s 2}
+@keyframes flash{50%{background:color-mix(in srgb,var(--sos) 22%,var(--surface2))}}
+@media (prefers-reduced-motion:reduce){.inc.fresh{animation:none}}
+.inc.done{opacity:.6;border-left-color:var(--safe)}
+.inc-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.inc-top b{font-family:var(--head);font-size:16px}
+.badge{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;background:var(--line);color:var(--ink)}
+.badge.critical{background:var(--sos);color:#0B121B} .badge.high{background:var(--warn);color:#0B121B} .badge.s-resolved{background:var(--safe);color:#0B121B}
+.meta{font-size:13px;color:var(--muted);margin:3px 0}
+.tl{margin:6px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
+.tl li{padding-left:12px;position:relative}
+.tl li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--line)}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:14px;text-align:center}
+.walker{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:8px 0;border-top:1px solid var(--line)}
+.sev{display:flex;gap:6px;margin:8px 0}
+.sev label{margin:0;font-weight:500;font-size:13px;border:1.5px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer}
+.sev input{position:absolute;opacity:0;pointer-events:none}
+.sev input:checked+span{font-weight:700}
+.sev label:has(input:checked){border-color:var(--ink);background:var(--surface2)}
+.sev label:has(input:focus-visible){outline:3px solid var(--info);outline-offset:2px}
+.ops textarea,.ops select{background:var(--surface2);border-color:var(--line)}
+.tpl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.ops .toast{bottom:16px}
+.alog{list-style:none;padding:0;margin:10px 0 0;font-size:13px;color:var(--muted);display:grid;gap:5px}
+footer{max-width:1360px;margin:0 auto;padding:0 20px 30px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>CampusGuard</h1>
+    <p>Smart campus safety and emergency assistance: one-touch SOS, live help-point map, safe-walk tracking and a security control room, in a single prototype.</p>
+  </div>
+  <div class="top-actions">
+    <div class="seg" id="viewSeg" role="group" aria-label="Choose view">
+      <button type="button" data-v="student" aria-pressed="true">Student app</button>
+      <button type="button" data-v="ops" aria-pressed="false">Control room</button>
+    </div>
+    <button class="btn" id="simBtn" type="button">Simulate incident</button>
+    <button class="btn" id="resetBtn" type="button">Reset demo</button>
+  </div>
+</header>
+<div class="demo-hint">Try it: hold the SOS button in the student app, then switch to the control room to acknowledge, dispatch a responder and watch the student's tracker update live.</div>
+
+<main class="stage" id="stage" data-view="student">
+
+  <!-- ================= STUDENT APP ================= -->
+  <div class="phone-wrap">
+  <section class="phone" aria-label="Student app">
+    <div class="cd" id="cd" role="alertdialog" aria-live="assertive" aria-label="Sending SOS">
+      <p>Sending SOS to campus security in</p>
+      <div class="n" id="cdN">3</div>
+      <p>Your location and details are shared automatically.</p>
+      <button class="btn" id="cdCancel" type="button">Cancel, I'm okay</button>
+    </div>
+    <div class="toast" id="toastS" role="status" aria-live="polite"></div>
+
+    <div class="screen on" id="scr-home" role="tabpanel">
+      <div class="hello">
+        <div><h2>Hi Aarav</h2><span class="chip" id="locChip"><i></i>Locating…</span></div>
+      </div>
+      <div id="alertBanner"></div>
+      <div class="label">What's happening?</div>
+      <div class="types" id="types" role="group" aria-label="Emergency type"></div>
+      <div class="sos-zone">
+        <button class="sos" id="sosBtn" type="button" aria-label="SOS. Press and hold for one second to send an emergency alert">SOS<small>Hold to send</small></button>
+        <div class="cap">Hold for 1 second, then you get 3 seconds to cancel. Keyboard: hold Space.</div>
+      </div>
+      <div id="sosStatus"></div>
+      <div class="label">Call directly</div>
+      <div class="contacts">
+        <button type="button" data-call="Campus Security (24×7)"><b>Campus security</b>Control room</button>
+        <button type="button" data-call="Ambulance 108"><b>Ambulance</b>108</button>
+        <button type="button" data-call="Women helpline 181"><b>Women helpline</b>181</button>
+        <button type="button" data-call="Police 112"><b>Police</b>112</button>
+      </div>
+      <div class="label">Campus notices</div>
+      <div id="alertsList"></div>
+    </div>
+
+    <div class="screen" id="scr-map" role="tabpanel">
+      <h2 style="font-size:21px">Help nearby</h2>
+      <p class="meta" style="color:var(--muted);margin:4px 0 10px;font-size:14px">Tap the map to move your simulated GPS position.</p>
+      <div class="mapbox" id="stuMap"></div>
+      <div class="maplegend">
+        <span><i style="background:var(--info)"></i>You / blue-light phone</span>
+        <span><i style="background:var(--safe)"></i>Security post / responder</span>
+        <span><i style="background:var(--sos)"></i>Medical / alert</span>
+        <span><i style="background:var(--warn)"></i>AED</span>
+      </div>
+      <div class="card"><h3>Closest to you</h3><ul class="help-list" id="nearest"></ul></div>
+    </div>
+
+    <div class="screen" id="scr-walk" role="tabpanel">
+      <h2 style="font-size:21px">Safe walk</h2>
+      <p style="color:var(--muted);margin:4px 0 0;font-size:14px">Share your route with campus security. If you don't confirm arrival, they're alerted automatically.</p>
+      <div id="walkBody"></div>
+    </div>
+
+    <div class="screen" id="scr-report" role="tabpanel">
+      <h2 style="font-size:21px">Report a concern</h2>
+      <p style="color:var(--muted);margin:4px 0 0;font-size:14px">For non-urgent issues. For emergencies use the SOS button.</p>
+      <form id="reportForm" onsubmit="return false">
+        <label for="rType">What are you reporting?</label>
+        <select id="rType">
+          <option value="suspicious">Suspicious person or activity</option>
+          <option value="hazard">Safety hazard (broken light, spill, fence)</option>
+          <option value="theft">Theft or damage</option>
+          <option value="harass">Harassment or ragging</option>
+        </select>
+        <label for="rDesc">Details</label>
+        <textarea id="rDesc" placeholder="What did you see, and when?"></textarea>
+        <label class="check" for="rAnon" style="font-weight:500"><input type="checkbox" id="rAnon"><span>Report anonymously. Your name is hidden from the control room.</span></label>
+        <div class="row"><button class="btn primary" id="rSend" type="button">Send report</button></div>
+      </form>
+    </div>
+
+    <nav class="nav" role="tablist" aria-label="App sections" id="nav">
+      <button type="button" role="tab" data-s="home" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg>Home</button>
+      <button type="button" role="tab" data-s="map" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M9 3l6 2 6-2v16l-6 2-6-2-6 2V5z"/><path d="M9 3v16M15 5v16"/></svg>Map</button>
+      <button type="button" role="tab" data-s="walk" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3.5 3.5 0 000-7h-4a3.5 3.5 0 010-7h6"/></svg>Safe walk</button>
+      <button type="button" role="tab" data-s="report" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 3h14v14H9l-4 4z"/><path d="M12 7v4M12 14h.01"/></svg>Report</button>
+    </nav>
+  </section>
+  </div>
+
+  <!-- ================= CONTROL ROOM ================= -->
+  <section class="ops" aria-label="Security control room">
+    <div class="toast" id="toastO" role="status" aria-live="polite"></div>
+    <div class="ops-head">
+      <h2>Security control room</h2>
+      <span class="live"><i></i>Live feed · demo time runs about 10× faster</span>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="ops-grid">
+      <div>
+        <h3>Incident queue</h3>
+        <div id="queue"></div>
+      </div>
+      <div>
+        <h3>Campus overview</h3>
+        <div class="mapbox" id="opsMap"></div>
+        <div class="maplegend">
+          <span><i style="background:var(--sos)"></i>Critical / high</span>
+          <span><i style="background:var(--warn)"></i>Low</span>
+          <span><i style="background:var(--safe)"></i>Responder</span>
+          <span><i style="background:var(--info)"></i>Student on walk</span>
+        </div>
+        <h3 style="margin-top:18px">Safe walks in progress</h3>
+        <div id="walkers"></div>
+        <h3 style="margin-top:18px">Broadcast to all students</h3>
+        <div class="tpl">
+          <button class="btn small" type="button" data-tpl="Heavy rain expected after 6 PM. Use covered walkways and avoid the sports ground.">Rain advisory</button>
+          <button class="btn small" type="button" data-tpl="Fire alarm in Science Block. Evacuate calmly via the nearest exit and gather at the Main Gate.">Evacuate Science</button>
+          <button class="btn small" type="button" data-tpl="All clear. Normal activity can resume.">All clear</button>
+        </div>
+        <textarea id="bText" aria-label="Broadcast message" placeholder="Write a message for every student's phone"></textarea>
+        <div class="sev" role="radiogroup" aria-label="Severity">
+          <label><input type="radio" name="bsev" value="info" checked><span>Advisory</span></label>
+          <label><input type="radio" name="bsev" value="warning"><span>Warning</span></label>
+          <label><input type="radio" name="bsev" value="emergency"><span>Emergency</span></label>
+        </div>
+        <button class="btn primary" id="bSend" type="button">Send to all students</button>
+        <ul class="alog" id="blog"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>Prototype with simulated GPS, calls and responders. In production, the same flows would run on phone GPS, a push-notification service, campus CCTV/blue-light integrations and a real dispatch backend.</footer>
+
+<script>
+/* ============ DATA ============ */
+const SCALE = 2.5;      // metres per map unit
+const SPEED = 12;       // responder speed, map units per second (demo-accelerated)
+const B = [
+  {id:'admin',name:'Admin',x:40,y:40,w:65,h:45},
+  {id:'sci',name:'Science',x:240,y:40,w:80,h:50},
+  {id:'lib',name:'Library',x:150,y:100,w:70,h:50},
+  {id:'med',name:'Medical',x:235,y:115,w:45,h:35},
+  {id:'ha',name:'Hostel A',x:30,y:150,w:70,h:50},
+  {id:'hb',name:'Hostel B',x:30,y:215,w:70,h:45},
+  {id:'caf',name:'Café',x:135,y:185,w:55,h:40},
+  {id:'sp',name:'Sports',x:290,y:185,w:90,h:65}
+].map(b=>({...b,cx:b.x+b.w/2,cy:b.y+b.h/2}));
+const ROADS = ['M125 20V290','M228 20V300','M105 170H400'];
+const H = [
+  ...[[125,60],[125,120],[125,200],[125,262],[228,90],[228,200],[228,250],[300,170],[180,170],[110,170]].map((p,i)=>({id:'bl'+i,type:'blue',name:'Blue-light phone',x:p[0],y:p[1]})),
+  {id:'s1',type:'sec',name:'Main Gate security post',x:228,y:284},
+  {id:'s2',type:'sec',name:'Admin security desk',x:112,y:93},
+  {id:'m1',type:'med',name:'Medical Centre',x:257,y:155},
+  {id:'a1',type:'aed',name:'AED, Library',x:185,y:156},
+  {id:'a2',type:'aed',name:'AED, Sports',x:335,y:179}
+];
+const TYPES = {
+  medical:{label:'Medical emergency',sev:'critical',sos:true},
+  fire:{label:'Fire or smoke',sev:'critical',sos:true},
+  threat:{label:'Threat or harassment',sev:'critical',sos:true},
+  accident:{label:'Accident or injury',sev:'high',sos:true},
+  other:{label:'Other help needed',sev:'high',sos:true},
+  suspicious:{label:'Suspicious activity (report)',sev:'medium'},
+  hazard:{label:'Safety hazard (report)',sev:'medium'},
+  theft:{label:'Theft or damage (report)',sev:'medium'},
+  harass:{label:'Harassment (report)',sev:'high'},
+  escort:{label:'Escort request',sev:'low'},
+  checkin:{label:'Missed safe-walk check-in',sev:'high'},
+  sim:{label:'',sev:'high'}
+};
+const SEVRANK={critical:0,high:1,medium:2,low:3};
+const NAMES=['Priya N.','Rahul S.','Meera K.','Imran A.','Sneha R.','Karthik V.'];
+
+/* ============ STATE ============ */
+let S, kind='medical', hold=null;
+function init(){
+  const now=Date.now();
+  S={
+    me:{name:'Aarav Reddy',x:180,y:160},
+    incidents:[], alerts:[], broadcasts:[], seq:100, sel:null, cd:null, walk:null, last:now,
+    responders:[
+      {id:'p1',name:'Patrol 1',type:'sec',hx:228,hy:278,x:228,y:278,inc:null},
+      {id:'p2',name:'Patrol 2',type:'sec',hx:112,hy:100,x:112,y:100,inc:null},
+      {id:'md',name:'Medical team',type:'med',hx:257,hy:158,x:257,y:158,inc:null},
+      {id:'fm',name:'Fire marshal',type:'fire',hx:130,hy:92,x:130,y:92,inc:null}
+    ]
+  };
+  S.alerts.push({id:1,sev:'info',text:'Library will stay open until midnight this week. Security patrols continue all night.',t:now-3600e3});
+  const r=mk({type:'hazard',x:70,y:215,by:'Anonymous',anon:true,desc:'Streetlight outside Hostel B has been out since Monday.',t:now-14*60e3,mine:false});
+  r.status='ack'; r.tAck=r.t0+120e3; log(r,'Acknowledged by Control Room',r.tAck);
+}
+function mk({type,x,y,by,anon=false,desc='',t=Date.now(),mine=false}){
+  const T=TYPES[type];
+  const inc={id:'INC-'+(++S.seq),type,sev:T.sev,x,y,by,anon,desc,status:'new',t0:t,tAck:null,tRes:null,resp:null,mine,timeline:[],fresh:true,loc:nearBld(x,y)};
+  log(inc,'Alert received'+(T.sos?' with live location':''),t);
+  S.incidents.unshift(inc); return inc;
+}
+const log=(i,txt,t=Date.now())=>i.timeline.push({t,txt});
+const byId=id=>S.incidents.find(i=>i.id===id);
+const label=i=>TYPES[i.type].label||i.simLabel;
+function nearBld(x,y){let b=B.reduce((a,c)=>Math.hypot(c.cx-x,c.cy-y)<Math.hypot(a.cx-x,a.cy-y)?c:a);return 'Near '+b.name+' ('+Math.round(Math.hypot(b.cx-x,b.cy-y)*SCALE)+' m)';}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clock=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function toast(el,msg){const t=$(el);t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2800)}
+
+/* ============ MAP ============ */
+function helpIcon(h){
+  const {x,y,type}=h;
+  if(type==='blue') return `<circle cx="${x}" cy="${y}" r="6" fill="var(--info)" opacity=".18"/><circle cx="${x}" cy="${y}" r="3.2" fill="var(--info)"/>`;
+  if(type==='sec') return `<rect x="${x-5}" y="${y-5}" width="10" height="10" rx="2.5" fill="var(--safe)"/><path d="M${x} ${y-3}l3 1.2v2.2c0 1.6-1.3 2.6-3 3.2-1.7-.6-3-1.6-3-3.2V${y-1.8}z" fill="#fff"/>`;
+  if(type==='med') return `<circle cx="${x}" cy="${y}" r="6" fill="var(--sos)"/><path d="M${x-3} ${y}h6M${x} ${y-3}v6" stroke="#fff" stroke-width="2"/>`;
+  return `<circle cx="${x}" cy="${y}" r="4.5" fill="var(--warn)"/><path d="M${x-2.2} ${y}h4.4M${x} ${y-2.2}v4.4" stroke="#fff" stroke-width="1.4"/>`;
+}
+function mapSVG(mode){
+  let s=`<svg viewBox="0 0 400 300" role="img" aria-label="Campus map"><rect width="400" height="300" class="m-grass"/>`;
+  ROADS.forEach(d=>s+=`<path d="${d}" class="m-road"/>`);
+  B.forEach(b=>s+=`<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="4" class="m-bld"/><text x="${b.cx}" y="${b.cy+3.5}" class="m-lbl">${b.name}</text>`);
+  s+=`<text x="262" y="296" class="m-lbl">Main Gate</text>`;
+  H.forEach(h=>s+=helpIcon(h));
+  const w=S.walk;
+  if(w&&w.status!=='ended'){s+=`<line x1="${w.x0}" y1="${w.y0}" x2="${w.x1}" y2="${w.y1}" class="m-walk"/>`;}
+  const mine=S.incidents.filter(i=>i.mine&&i.status!=='resolved');
+  const incs = mode==='ops' ? S.incidents.filter(i=>i.status!=='resolved') : mine;
+  incs.forEach(i=>{
+    const low=(i.sev==='low'||i.sev==='medium')?' low':'';
+    s+=`<g data-inc="${i.id}" style="cursor:${mode==='ops'?'pointer':'default'}"><circle cx="${i.x}" cy="${i.y}" r="11" class="m-incring${low} pulse"/><circle cx="${i.x}" cy="${i.y}" r="6" class="m-inc${low}${S.sel===i.id&&mode==='ops'?' sel':''}"/></g>`;
+  });
+  S.responders.forEach(r=>{
+    const show = mode==='ops' ? true : mine.some(i=>i.resp===r.id);
+    if(!show) return;
+    s+=`<g><path d="M${r.x} ${r.y-6}l6 6-6 6-6-6z" class="m-resp"/><text x="${r.x}" y="${r.y+17}" class="m-resp-lbl">${r.name}</text></g>`;
+  });
+  s+=`<circle cx="${S.me.x}" cy="${S.me.y}" r="12" class="m-ring"/><circle cx="${S.me.x}" cy="${S.me.y}" r="5.5" class="m-me"/>`;
+  if(mode==='ops'&&S.walk&&S.walk.status!=='ended') s+=`<text x="${S.me.x}" y="${S.me.y-12}" class="m-resp-lbl">Aarav</text>`;
+  return s+'</svg>';
+}
+function renderMaps(){ $('#stuMap').innerHTML=mapSVG('student'); $('#opsMap').innerHTML=mapSVG('ops'); }
+function svgPoint(e,el){const r=el.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*400,y:(e.clientY-r.top)/r.height*300};}
+
+function renderNearest(){
+  const nn=t=>{const l=H.filter(h=>t.includes(h.type));return l.reduce((a,c)=>dist(S.me,c)<dist(S.me,a)?c:a)};
+  const row=(t,h)=>`<li><span>${t}<br><small style="color:var(--muted)">${h.name}</small></span><b>${Math.round(dist(S.me,h)*SCALE)} m</b></li>`;
+  $('#nearest').innerHTML=row('Blue-light phone',nn(['blue']))+row('Security post',nn(['sec']))+row('Medical Centre',nn(['med']))+row('Nearest AED',nn(['aed']));
+  const b=nn(['blue','sec']);
+  $('#locChip').innerHTML=`<i></i>${esc(nearBld(S.me.x,S.me.y))} · help point ${Math.round(dist(S.me,b)*SCALE)} m away`;
+}
+
+/* ============ STUDENT UI ============ */
+function renderTypes(){
+  $('#types').innerHTML=Object.entries(TYPES).filter(([k,v])=>v.sos).map(([k,v])=>`<button type="button" data-k="${k}" aria-pressed="${k===kind}">${v.label}</button>`).join('');
+}
+function renderAlerts(){
+  const list=[...S.alerts].sort((a,b)=>b.t-a.t);
+  const top=list.find(a=>a.sev!=='info'&&Date.now()-a.t<10*60e3);
+  $('#alertBanner').innerHTML=top?`<div class="banner ${top.sev}" role="alert"><b>${top.sev==='emergency'?'Emergency alert':'Campus warning'}</b>${esc(top.text)}</div>`:'';
+  $('#alertsList').innerHTML=list.length?list.map(a=>`<div class="banner ${a.sev}" style="margin:0 0 8px"><small style="color:var(--muted)">${clock(a.t)}</small><br>${esc(a.text)}</div>`).join(''):'<div class="empty">No notices right now.</div>';
+}
+function myInc(){return S.incidents.find(i=>i.mine&&i.status!=='resolved')}
+function renderStatus(){
+  const i=myInc(), el=$('#sosStatus');
+  if(!i){el.innerHTML='';return;}
+  const order=['new','ack','dispatched','onscene'], idx=order.indexOf(i.status);
+  const r=S.responders.find(x=>x.id===i.resp);
+  const eta = r&&i.status==='dispatched' ? ` · ETA <b data-eta="${i.id}">${mmss(dist(r,i)/SPEED)}</b>`:'';
+  const steps=[['Alert sent with your location','Sent'],['Control room has seen it','Seen'],[r?`${r.name} is on the way${eta}`:'Responder on the way','Dispatched'],[r?`${r.name} is with you`:'Responder with you','On scene']];
+  el.innerHTML=`<div class="card" aria-live="polite"><h3>${esc(label(i))}: help is coming</h3>
+  <ul class="steps">${steps.map((s,n)=>`<li class="${n<idx?'done':n===idx?'done now':''}"><i>${n<=idx?'✓':''}</i><span>${s[0]}</span></li>`).join('')}</ul>
+  <div class="row"><button class="btn small" type="button" data-call="Control room (callback)">Call control room</button><button class="btn small" type="button" id="imSafe">I'm safe, cancel alert</button></div></div>`;
+}
+function beginCountdown(){
+  if(myInc()){toast('#toastS','You already have an active alert.');return;}
+  S.cd={end:Date.now()+3000};$('#cd').classList.add('on');$('#cdN').textContent='3';
+}
+function sendSOS(){
+  const T=TYPES[kind];
+  const i=mk({type:kind,x:S.me.x,y:S.me.y,by:S.me.name,desc:'SOS button pressed',mine:true});
+  S.sel=i.id; changed(); toast('#toastS','Alert sent. Stay where you are if it is safe.');
+  toast('#toastO','New '+TYPES[kind].label.toLowerCase()+' from '+S.me.name);
+}
+function holdStart(){
+  if(S.cd||hold)return;const b=$('#sosBtn'),t0=performance.now();b.classList.add('holding');
+  const step=()=>{const p=Math.min(1,(performance.now()-t0)/1000);b.style.setProperty('--p',p);
+    if(p>=1){hold=null;b.classList.remove('holding');b.style.setProperty('--p',0);beginCountdown();}else hold=requestAnimationFrame(step)};
+  hold=requestAnimationFrame(step);
+}
+function holdCancel(){if(hold){cancelAnimationFrame(hold);hold=null}const b=$('#sosBtn');b.classList.remove('holding');b.style.setProperty('--p',0)}
+
+/* ---- safe walk ---- */
+function renderWalk(){
+  const w=S.walk, el=$('#walkBody');
+  if(!w||w.status==='ended'){
+    el.innerHTML=`<form onsubmit="return false"><label for="wDest">Where are you going?</label>
+    <select id="wDest">${B.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}</select>
+    <div class="row"><button class="btn primary" type="button" id="wStart">Start safe walk</button><button class="btn" type="button" id="wEsc">Request an escort</button></div></form>
+    <div class="card"><h3>How it works</h3><p style="margin:0;font-size:14px;color:var(--muted)">Security sees your route while you walk. Reach your destination and tap "I've arrived". Miss the check-in and the control room gets an alert.</p></div>`;
+  } else if(w.status==='active'){
+    el.innerHTML=`<div class="card"><h3>Walking to ${esc(w.dest.name)}</h3><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="wBar"></div></div>
+    <div style="font-size:13px;color:var(--muted)"><span id="wPct">0%</span> · sharing live location with campus security</div>
+    <div class="row"><button class="btn safe" type="button" id="wArr">I've arrived</button><button class="btn" type="button" id="wEsc">Request an escort</button><button class="btn" type="button" id="wEnd">End walk</button></div></div>`;
+  } else if(w.status==='wait'){
+    el.innerHTML=`<div class="card" role="alert"><h3>You've reached ${esc(w.dest.name)}</h3><p style="margin:0 0 4px;font-size:14px">Confirm you're safe within <b id="wLeft">8</b> seconds or security will be alerted.</p><div class="row"><button class="btn safe" type="button" id="wArr">I've arrived safely</button></div></div>`;
+  } else {
+    el.innerHTML=`<div class="card" role="alert" style="border-color:var(--sos)"><h3>Check-in missed</h3><p style="margin:0;font-size:14px">The control room has been alerted and can see your location.</p><div class="row"><button class="btn safe" type="button" id="wSafe">I'm safe</button></div></div>`;
+  }
+}
+function startWalk(){
+  const dest=B.find(b=>b.id===$('#wDest').value);
+  const d=Math.hypot(dest.cx-S.me.x,dest.cy-S.me.y);
+  S.walk={status:'active',dest,x0:S.me.x,y0:S.me.y,x1:dest.cx,y1:dest.cy,start:Date.now(),dur:Math.max(6000,d*SCALE/1.4/10*1000)};
+  renderWalk();changed();toast('#toastO','Aarav started a safe walk to '+dest.name);
+}
+function escort(){
+  if(S.incidents.some(i=>i.mine&&i.type==='escort'&&i.status!=='resolved')){toast('#toastS','Escort already requested.');return;}
+  const i=mk({type:'escort',x:S.me.x,y:S.me.y,by:S.me.name,desc:'Student asked for a security escort',mine:true});
+  S.sel=i.id;changed();toast('#toastS','Escort requested. Security will meet you.');toast('#toastO','Escort request from '+S.me.name);
+}
+function endWalk(){if(S.walk)S.walk.status='ended';S.walk=null;renderWalk();changed()}
+
+/* ============ CONTROL ROOM UI ============ */
+function renderStats(){
+  const act=S.incidents.filter(i=>i.status!=='resolved');
+  const acks=S.incidents.filter(i=>i.tAck);
+  const avg=acks.length?mmss(acks.reduce((a,i)=>a+(i.tAck-i.t0),0)/acks.length/1000):'–';
+  const wk=S.walk&&S.walk.status!=='ended'?1:0;
+  $('#stats').innerHTML=[[act.length,'Active incidents'],[act.filter(i=>i.sev==='critical').length,'Critical'],[avg,'Avg time to acknowledge'],[wk,'Safe walks live']].map(s=>`<div class="stat"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('');
+}
+function suited(r,i){return (i.type==='medical'&&r.type==='med')||(i.type==='fire'&&r.type==='fire')||(i.type==='threat'&&r.type==='sec')}
+function renderQueue(){
+  const act=S.incidents.filter(i=>i.status!=='resolved').sort((a,b)=>SEVRANK[a.sev]-SEVRANK[b.sev]||a.t0-b.t0);
+  const done=S.incidents.filter(i=>i.status==='resolved').slice(0,3);
+  const card=i=>{
+    const r=S.responders.find(x=>x.id===i.resp), res=i.status==='resolved';
+    let acts='';
+    if(!res){
+      if(i.status==='new') acts+=`<button class="btn small primary" data-act="ack" data-id="${i.id}">Acknowledge</button>`;
+      if(i.status==='new'||i.status==='ack'){
+        S.responders.filter(x=>!x.inc).sort((a,b)=>(suited(b,i)-suited(a,i))||dist(a,i)-dist(b,i)).forEach(x=>{
+          acts+=`<button class="btn small ${suited(x,i)?'danger':''}" data-act="dispatch" data-id="${i.id}" data-r="${x.id}" title="${suited(x,i)?'Best match for this incident':''}">Dispatch ${x.name} · ${mmss(dist(x,i)/SPEED)}</button>`;
+        });
+      }
+      if(i.mine&&i.type!=='escort') acts+=`<button class="btn small" data-act="call" data-id="${i.id}">Call student</button>`;
+      acts+=`<button class="btn small safe" data-act="resolve" data-id="${i.id}">Resolve</button>`;
+    }
+    const st={new:'New',ack:'Acknowledged',dispatched:'Dispatched',onscene:'On scene',resolved:'Resolved'}[i.status];
+    return `<article class="inc ${i.sev} ${res?'done':''} ${S.sel===i.id?'sel':''} ${i.fresh&&!res?'fresh':''}" data-pick="${i.id}">
+      <div class="inc-top"><b>${esc(label(i))}</b><span class="badge ${res?'s-resolved':i.sev}">${res?'Resolved':i.sev}</span></div>
+      <div class="meta">${esc(i.loc)} · ${i.anon?'Anonymous':esc(i.by)} · <span data-since="${res?'':i.t0}">${res?mmss((i.tRes-i.t0)/1000)+' total':mmss((Date.now()-i.t0)/1000)}</span> · ${st}${r&&i.status==='dispatched'?` · ETA <b data-eta="${i.id}">${mmss(dist(r,i)/SPEED)}</b>`:''}</div>
+      ${i.desc?`<div class="meta" style="color:var(--ink)">${esc(i.desc)}</div>`:''}
+      ${res?'':`<ul class="tl">${i.timeline.slice(-3).map(t=>`<li>${clock(t.t)} ${esc(t.txt)}</li>`).join('')}</ul>`}
+      ${acts?`<div class="acts">${acts}</div>`:''}</article>`;
+  };
+  $('#queue').innerHTML=(act.length?act.map(card).join(''):'<div class="empty">No active incidents. Hold SOS in the student app or press "Simulate incident".</div>')+(done.length?`<div class="meta" style="margin:14px 0 6px">Recently resolved</div>`+done.map(card).join(''):'');
+  S.incidents.forEach(i=>i.fresh=false);
+}
+function renderWalkers(){
+  const w=S.walk;
+  $('#walkers').innerHTML=w&&w.status!=='ended'?`<div class="walker"><span><b>${esc(S.me.name)}</b> to ${esc(w.dest.name)}</span><span id="oWalk" style="color:var(--muted)">${w.status==='active'?'0%':w.status==='wait'?'Awaiting check-in':'Check-in missed'}</span></div>`:'<div class="empty">Nobody is on a safe walk right now. Start one from the Safe walk tab.</div>';
+}
+function renderBlog(){
+  $('#blog').innerHTML=S.alerts.filter(a=>a.id>1).sort((a,b)=>b.t-a.t).slice(0,3).map(a=>`<li>${clock(a.t)} · ${a.sev} · ${esc(a.text.slice(0,70))}${a.text.length>70?'…':''}</li>`).join('');
+}
+
+/* ============ ACTIONS ============ */
+function resolve(i,why){
+  i.status='resolved';i.tRes=Date.now();log(i,why);
+  S.responders.forEach(r=>{if(r.inc===i.id)r.inc=null});
+}
+function changed(){renderStatus();renderQueue();renderStats();renderWalkers();renderMaps();renderNearest()}
+
+$('#queue').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(b){
+    const i=byId(b.dataset.id);if(!i)return;
+    if(b.dataset.act==='ack'){i.status='ack';i.tAck=Date.now();log(i,'Acknowledged by Control Room');}
+    if(b.dataset.act==='dispatch'){const r=S.responders.find(x=>x.id===b.dataset.r);if(i.status==='new'){i.tAck=Date.now();}r.inc=i.id;i.resp=r.id;i.status='dispatched';log(i,r.name+' dispatched');if(i.mine)toast('#toastS',r.name+' is on the way');}
+    if(b.dataset.act==='call'){toast('#toastO','Calling '+i.by+'… (simulated)');return;}
+    if(b.dataset.act==='resolve'){resolve(i,'Resolved by Control Room');if(i.mine)toast('#toastS','Your alert was marked resolved.');}
+    changed();return;
+  }
+  const c=e.target.closest('[data-pick]');if(c){S.sel=c.dataset.pick;renderQueue();renderMaps();}
+});
+$('#opsMap').addEventListener('click',e=>{const g=e.target.closest('[data-inc]');if(g){S.sel=g.dataset.inc;renderQueue();renderMaps();}});
+$('#stuMap').addEventListener('click',e=>{
+  if(S.walk&&S.walk.status!=='ended'){toast('#toastS','Position follows your safe walk.');return;}
+  const p=svgPoint(e,$('#stuMap svg'));S.me.x=Math.max(5,Math.min(395,p.x));S.me.y=Math.max(5,Math.min(295,p.y));renderMaps();renderNearest();
+});
+$('#types').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b){kind=b.dataset.k;renderTypes();}});
+$('#sosStatus').addEventListener('click',e=>{
+  if(e.target.id==='imSafe'){const i=myInc();if(i){resolve(i,'Cancelled by student: "I\'m safe"');toast('#toastO',S.me.name+' cancelled their alert');changed();}}
+});
+document.addEventListener('click',e=>{const c=e.target.closest('[data-call]');if(c){const m='Calling '+c.dataset.call+'… (simulated)';toast(c.closest('.ops')?'#toastO':'#toastS',m);}});
+$('#cdCancel').onclick=()=>{S.cd=null;$('#cd').classList.remove('on');toast('#toastS','Alert cancelled.')};
+const sb=$('#sosBtn');
+sb.addEventListener('pointerdown',e=>{e.preventDefault();holdStart()});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>sb.addEventListener(ev,holdCancel));
+sb.addEventListener('contextmenu',e=>e.preventDefault());
+sb.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();holdStart()}});
+sb.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')holdCancel()});
+
+$('#walkBody').addEventListener('click',e=>{
+  const id=e.target.id;
+  if(id==='wStart')startWalk();
+  if(id==='wEsc')escort();
+  if(id==='wEnd')endWalk();
+  if(id==='wArr'){toast('#toastO',S.me.name+' arrived safely');S.walk.status='ended';S.walk=null;renderWalk();changed();toast('#toastS','Walk complete. Stay safe!');}
+  if(id==='wSafe'){const i=S.incidents.find(x=>x.type==='checkin'&&x.status!=='resolved');if(i){resolve(i,'Student confirmed safe');}endWalk();toast('#toastO',S.me.name+' confirmed safe');}
+});
+$('#rSend').onclick=()=>{
+  const d=$('#rDesc').value.trim();if(!d){toast('#toastS','Add a few details first.');$('#rDesc').focus();return;}
+  const anon=$('#rAnon').checked;
+  mk({type:$('#rType').value,x:S.me.x,y:S.me.y,by:S.me.name,anon,desc:d,mine:false});
+  $('#rDesc').value='';changed();toast('#toastS','Report sent'+(anon?' anonymously.':'.'));toast('#toastO','New report received');
+};
+$('#bSend').onclick=()=>{
+  const t=$('#bText').value.trim();if(!t){toast('#toastO','Write a message first.');return;}
+  S.alerts.push({id:++S.seq,sev:document.querySelector('input[name=bsev]:checked').value,text:t,t:Date.now()});
+  $('#bText').value='';renderAlerts();renderBlog();toast('#toastO','Broadcast sent to all students');toast('#toastS','New campus alert');
+};
+$$('[data-tpl]').forEach(b=>b.onclick=()=>{$('#bText').value=b.dataset.tpl;if(/Evacuate/.test(b.textContent))document.querySelector('input[name=bsev][value=emergency]').checked=true;});
+$('#simBtn').onclick=()=>{
+  const pool=['medical','fire','threat','accident'],t=pool[Math.floor(Math.random()*pool.length)],b=B[Math.floor(Math.random()*B.length)];
+  const i=mk({type:t,x:b.cx+(Math.random()*20-10),y:b.cy+b.h/2+8,by:NAMES[Math.floor(Math.random()*NAMES.length)],desc:'Simulated SOS from another student',mine:false});
+  S.sel=i.id;changed();toast('#toastO','New '+TYPES[t].label.toLowerCase()+' near '+b.name);
+};
+$('#resetBtn').onclick=()=>{S.cd=null;$('#cd').classList.remove('on');init();renderAll();};
+$('#nav').addEventListener('click',e=>{
+  const b=e.target.closest('[data-s]');if(!b)return;
+  $$('#nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='scr-'+b.dataset.s));
+});
+$('#viewSeg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-v]');if(!b)return;
+  $('#stage').dataset.view=b.dataset.v;$$('#viewSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+});
+
+/* ============ SIMULATION LOOP ============ */
+function tick(){
+  const now=Date.now(),dt=Math.min(1,(now-S.last)/1000);S.last=now;let ch=false;
+  S.responders.forEach(r=>{
+    let tx,ty,inc=null;
+    if(r.inc){inc=byId(r.inc);tx=inc.x;ty=inc.y}else if(r.x!==r.hx||r.y!==r.hy){tx=r.hx;ty=r.hy}else return;
+    const dx=tx-r.x,dy=ty-r.y,d=Math.hypot(dx,dy),st=SPEED*dt;
+    if(d<=st){r.x=tx;r.y=ty;if(inc&&inc.status==='dispatched'){inc.status='onscene';log(inc,r.name+' on scene');ch=true;if(inc.mine)toast('#toastS',r.name+' has arrived');}}
+    else{r.x+=dx/d*st;r.y+=dy/d*st}
+  });
+  if(S.cd){const left=Math.ceil((S.cd.end-now)/1000);$('#cdN').textContent=Math.max(left,1);if(now>=S.cd.end){S.cd=null;$('#cd').classList.remove('on');sendSOS();}}
+  const w=S.walk;
+  if(w&&w.status==='active'){
+    const p=Math.min(1,(now-w.start)/w.dur);S.me.x=w.x0+(w.x1-w.x0)*p;S.me.y=w.y0+(w.y1-w.y0)*p;
+    const bar=$('#wBar');if(bar){bar.style.width=Math.round(p*100)+'%';$('#wPct').textContent=Math.round(p*100)+'%';}
+    const o=$('#oWalk');if(o)o.textContent=Math.round(p*100)+'%';
+    if(p>=1){w.status='wait';w.waitEnd=now+8000;renderWalk();renderWalkers();}
+  } else if(w&&w.status==='wait'){
+    const l=Math.ceil((w.waitEnd-now)/1000),e=$('#wLeft');if(e)e.textContent=Math.max(l,0);
+    if(now>=w.waitEnd){w.status='missed';const i=mk({type:'checkin',x:S.me.x,y:S.me.y,by:S.me.name,desc:'Did not confirm arrival at '+w.dest.name,mine:true});S.sel=i.id;renderWalk();changed();toast('#toastO','Missed check-in from '+S.me.name);}
+  }
+  $$('[data-since]').forEach(e=>{if(e.dataset.since)e.textContent=mmss((now-e.dataset.since)/1000)});
+  $$('[data-eta]').forEach(e=>{const i=byId(e.dataset.eta),r=i&&S.responders.find(x=>x.id===i.resp);if(r)e.textContent=mmss(dist(r,i)/SPEED)});
+  if(ch)changed();else renderMaps();
+}
+function renderAll(){renderTypes();renderAlerts();renderWalk();renderBlog();changed();}
+init();renderAll();S.last=Date.now();setInterval(tick,250);
+</script>
+</body>
+</html>
